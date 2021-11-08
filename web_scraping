@@ -10,16 +10,23 @@ page = get(URL)
 # parsing html with beautifulsoup
 bs = BeautifulSoup(page.content, 'html.parser')
 
+
 def first_time():
     # looking for names
-    name = bs.find('div', id = 'tab_userTables')
-    for phrase in name.find_all('a')[:-1]:
-        with open('file.csv', 'a', encoding='utf-8', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow([phrase.get_text().strip()])
+    table_name = bs.find('div', id = 'tab_userTables')
+    names = []
+    for name in table_name.find_all('a')[:-1]:
+        phrase = name.getText().strip()
+        names.append('date')
+        names.append(phrase)
+    # saving to csv file
+    with open('file.csv', 'a', encoding='utf-8', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow([names])   
 
 
 def writeline():
+    table_of_size = []
     # looking for size
     name = bs.find('div', id = 'tab_userTables')
     # insert the date
@@ -27,7 +34,8 @@ def writeline():
         csvwriter = csv.writer(csvfile)
         # current time
         today = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        csvwriter.writerow([today])
+        table_of_size.append(today)
+    # searching different link    
     for link in name.find_all('a')[:-1]:
         # replacement for the next link
         x = URL.replace('master-status', '')
@@ -37,31 +45,28 @@ def writeline():
         soup = BeautifulSoup(sizepage.content, 'html.parser')
         # searching the new page
         size = soup.find('table', id = 'regionServerDetailsTable')
+        # deleting every break lines
         for e in soup.find_all('br'):
-                e.extract()
+           e.extract()
+        # looking for size source
         for storefilesize in size.find_all('th')[4]:
-            txt = str(storefilesize.text.replace('StorefileSize','').replace('(','').replace(')',''))
-            c = txt.split(sep=" ")
-            print(c[-1])
+            txt = str(storefilesize.replace('(','').replace(')','')).split(sep = " ")
+            # change size to GB
+            if txt[-1] == 'B':
+                table_of_size.append((float(txt[0])/1073741824))
+            if txt[-1] == 'KB':
+                table_of_size.append((float(txt[0])/1048576))
+            if txt[-1] == 'MB':
+                table_of_size.append((float(txt[0])/1024))
+            if txt[-1] == 'GB':
+                table_of_size.append((float(txt[0])))
+            if txt[-1] == 'TB':
+                table_of_size.append((float(txt[0])*1024))
+    # saving to csv file  
+    with open('file.csv', 'a', encoding='utf-8', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerow([table_of_size])
 
-            
-            '''
-            with open('file.csv', 'a', encoding='utf-8', newline='') as csvfile:
-                csvwriter = csv.writer(csvfile)
-                if c[-1] == 'GB':
-                    (c[0]/1024)
-                    csvwriter.writerow(c[0])
-                elif c[-1] == 'KB':
-                    (c[0]*1024)
-                    csvwriter.writerow(c[0])
-                elif [-1] == 'TB':
-                    (c[0]/1048576)
-                    csvwriter.writerow(c[0])
-                elif [-1] == 'B':
-                    (c[0]*1048576)
-                    csvwriter.writerow(c[0])
-                csvwriter.writerow(c[0])
-            '''
 
 # opening csv file
 def readline():
@@ -69,6 +74,8 @@ def readline():
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
             print(row)
+
+
 
 
 first_time()
